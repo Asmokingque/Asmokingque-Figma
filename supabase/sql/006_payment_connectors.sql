@@ -1,0 +1,1 @@
+-- 006_payment_connectors.sql

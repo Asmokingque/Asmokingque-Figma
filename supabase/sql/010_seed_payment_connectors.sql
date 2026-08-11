@@ -1,0 +1,1 @@
+-- 010_seed_payment_connectors.sql

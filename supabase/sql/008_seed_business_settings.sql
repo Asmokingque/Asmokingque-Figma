@@ -1,0 +1,1 @@
+-- 008_seed_business_settings.sql
