@@ -1,0 +1,19 @@
+name: Failed Workflow Issue Creator
+on:
+  workflow_run:
+    workflows: ['CI Health Check', 'Website Smoke Test', 'Admin Login Debug', 'CodeQL Security Scan']
+    types: [completed]
+jobs:
+  create-issue:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Workflow failed: ${context.payload.workflow_run.name}`,
+              body: `Run URL: ${context.payload.workflow_run.html_url}`
+            })

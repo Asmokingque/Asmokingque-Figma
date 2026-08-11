@@ -1,0 +1,5 @@
+name: Website bug
+body:
+  - type: textarea
+    attributes:
+      label: Description

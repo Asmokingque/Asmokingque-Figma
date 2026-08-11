@@ -1,0 +1,1 @@
+-- 009_seed_menu_categories.sql
