@@ -24,7 +24,11 @@ export default function AdminLoginPage() {
     }
 
     const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname
-    navigate(from ?? '/admin', { replace: true })
+    const safePath =
+      from && from.startsWith('/') && !from.startsWith('//') && !from.includes('://')
+        ? from
+        : '/admin'
+    navigate(safePath, { replace: true })
   }
 
   return (

@@ -39,9 +39,12 @@ export default function AdminAuthProvider({ children }: Props) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setLoading(true)
       setSession(newSession)
       setUser(newSession?.user ?? null)
       void refreshAdminProfile(newSession?.user?.id)
+        .catch(() => setAdminProfile(null))
+        .finally(() => setLoading(false))
     })
 
     return () => subscription.unsubscribe()
@@ -55,6 +58,7 @@ export default function AdminAuthProvider({ children }: Props) {
     })
 
     if (error || !data.user) {
+      await supabase.auth.signOut()
       return { error: 'Invalid email or password. Please check your admin credentials.' }
     }
 
@@ -90,8 +94,8 @@ export default function AdminAuthProvider({ children }: Props) {
       session,
       adminProfile,
       role,
-      isSuperAdmin: role === 'super_admin',
-      isAdmin: Boolean(adminProfile?.active),
+      isSuperAdmin: Boolean(adminProfile?.active && role === 'super_admin'),
+      isAdmin: Boolean(adminProfile?.active && (role === 'admin' || role === 'super_admin')),
       loading,
       signIn,
       signOut,
