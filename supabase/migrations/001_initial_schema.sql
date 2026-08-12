@@ -105,3 +105,30 @@ create table if not exists business_settings (
   minimum_order numeric(10, 2) not null default 0,
   delivery_fee numeric(10, 2) not null default 0
 );
+
+-- ============================================================
+-- Contact Messages
+-- ============================================================
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  message TEXT NOT NULL,
+  is_read BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can submit contact messages"
+  ON contact_messages FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Admins can read contact messages"
+  ON contact_messages FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM admin_users
+      WHERE user_id = auth.uid() AND is_active = true
+    )
+  );

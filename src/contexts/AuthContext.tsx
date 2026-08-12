@@ -59,11 +59,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!error && data) {
         setAdminUser(data as AdminUser)
-      } else {
-        setAdminUser(null)
       }
+      // On transient errors, do NOT reset adminUser to avoid logged-in admins
+      // being bounced to the login page due to a network hiccup.
     } catch {
-      setAdminUser(null)
+      // Swallow transient errors; adminUser retains its current value.
     } finally {
       setLoading(false)
     }

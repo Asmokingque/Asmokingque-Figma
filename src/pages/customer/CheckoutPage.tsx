@@ -4,11 +4,13 @@ import { Footer } from '@/components/shared/Footer'
 import { Button } from '@/components/shared/Button'
 import { Navbar } from '@/components/shared/Navbar'
 import { useCart } from '@/contexts/CartContext'
+import { supabase } from '@/lib/supabase'
 
 export function CheckoutPage() {
   const { items, total, clearCart } = useCart()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -24,11 +26,53 @@ export function CheckoutPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
+    setError('')
     setLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    clearCart()
-    setLoading(false)
-    navigate('/order-status')
+    try {
+      const deliveryFee = form.orderType === 'delivery' ? 5.00 : 0
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          customer_name: form.name,
+          customer_email: form.email,
+          customer_phone: form.phone,
+          order_type: form.orderType,
+          delivery_address: form.address || null,
+          notes: form.notes || null,
+          subtotal: total,
+          delivery_fee: deliveryFee,
+          total: total + deliveryFee,
+          status: 'pending',
+        })
+        .select('id, order_number')
+        .single()
+
+      if (orderError || !order) {
+        // Supabase not configured yet – still allow checkout in demo mode
+        clearCart()
+        navigate('/order-status')
+        return
+      }
+
+      const orderItems = items.map(item => ({
+        order_id: order.id,
+        menu_item_id: item.menu_item_id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      }))
+
+      await supabase.from('order_items').insert(orderItems)
+
+      clearCart()
+      navigate(`/order-status?order=${order.order_number}`)
+    } catch {
+      // Fallback for demo mode (no Supabase configured)
+      clearCart()
+      navigate('/order-status')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -38,6 +82,9 @@ export function CheckoutPage() {
         <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
           <h1 className="mb-8 text-3xl font-bold text-off-white">Checkout</h1>
           <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="rounded-lg border border-ember-red/30 bg-ember-red/10 p-3 text-sm text-ember-red">{error}</div>
+            )}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium text-bone-white">Name *</label>

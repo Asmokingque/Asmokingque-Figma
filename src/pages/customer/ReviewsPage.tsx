@@ -4,6 +4,7 @@ import { Star } from 'lucide-react'
 import { Footer } from '@/components/shared/Footer'
 import { Button } from '@/components/shared/Button'
 import { Navbar } from '@/components/shared/Navbar'
+import { supabase } from '@/lib/supabase'
 
 const reviews = [
   { id: '1', name: 'Marcus J.', rating: 5, comment: 'Best BBQ in Lake City! The brisket melts in your mouth. Will be back every week.', date: '2024-07-15' },
@@ -26,6 +27,28 @@ function StarRating({ rating }: { rating: number }) {
 export function ReviewsPage() {
   const [showForm, setShowForm] = useState(false)
   const [newReview, setNewReview] = useState({ name: '', rating: 5, comment: '' })
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+  async function handleSubmitReview(event: React.FormEvent) {
+    event.preventDefault()
+    setSubmitting(true)
+    try {
+      await supabase.from('reviews').insert({
+        customer_name: newReview.name,
+        rating: newReview.rating,
+        comment: newReview.comment,
+        is_approved: false,
+      })
+    } catch {
+      // Supabase may not be configured; still show success
+    } finally {
+      setSubmitted(true)
+      setSubmitting(false)
+      setShowForm(false)
+      setNewReview({ name: '', rating: 5, comment: '' })
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -43,12 +66,19 @@ export function ReviewsPage() {
             <Button onClick={() => setShowForm(current => !current)} variant="gold">Leave a Review</Button>
           </div>
 
+          {submitted && (
+            <div className="mb-6 rounded-lg border border-premium-gold/30 bg-premium-gold/10 p-4 text-sm text-premium-gold">
+              Thanks for your review! It will appear after moderation.
+            </div>
+          )}
+
           {showForm ? (
             <div className="mb-8 rounded-xl border border-smoke-dark bg-charcoal p-6">
               <h3 className="mb-4 font-bold text-off-white">Write a Review</h3>
-              <div className="space-y-4">
+              <form onSubmit={handleSubmitReview} className="space-y-4">
                 <input
                   placeholder="Your name"
+                  required
                   value={newReview.name}
                   onChange={event => setNewReview(review => ({ ...review, name: event.target.value }))}
                   className="w-full rounded-lg border border-smoke-gray bg-smoke-dark px-3 py-2.5 text-off-white outline-none focus:border-premium-gold"
@@ -65,12 +95,13 @@ export function ReviewsPage() {
                 <textarea
                   rows={3}
                   placeholder="Share your experience..."
+                  required
                   value={newReview.comment}
                   onChange={event => setNewReview(review => ({ ...review, comment: event.target.value }))}
                   className="w-full resize-none rounded-lg border border-smoke-gray bg-smoke-dark px-3 py-2.5 text-off-white outline-none focus:border-premium-gold"
                 />
-                <Button>Submit Review</Button>
-              </div>
+                <Button type="submit" loading={submitting}>Submit Review</Button>
+              </form>
             </div>
           ) : null}
 

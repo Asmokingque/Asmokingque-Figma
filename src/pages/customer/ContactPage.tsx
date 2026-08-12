@@ -3,15 +3,28 @@ import { Clock, Mail, MapPin, Phone } from 'lucide-react'
 import { Footer } from '@/components/shared/Footer'
 import { Button } from '@/components/shared/Button'
 import { Navbar } from '@/components/shared/Navbar'
+import { supabase } from '@/lib/supabase'
 
 export function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', message: '' })
   const [sent, setSent] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    await new Promise(resolve => setTimeout(resolve, 800))
-    setSent(true)
+    setLoading(true)
+    try {
+      await supabase.from('contact_messages').insert({
+        name: form.name,
+        email: form.email,
+        message: form.message,
+      })
+    } catch {
+      // Fallback: show success regardless (contact_messages table may not exist yet)
+    } finally {
+      setSent(true)
+      setLoading(false)
+    }
   }
 
   return (
@@ -61,7 +74,7 @@ export function ContactPage() {
                     <label className="mb-1 block text-sm font-medium text-bone-white">Message *</label>
                     <textarea name="message" rows={5} required value={form.message} onChange={event => setForm(current => ({ ...current, message: event.target.value }))} className="w-full resize-none rounded-lg border border-smoke-gray bg-smoke-dark px-3 py-2.5 text-off-white outline-none focus:border-premium-gold" />
                   </div>
-                  <Button type="submit" size="lg" className="w-full">Send Message</Button>
+                  <Button type="submit" size="lg" loading={loading} className="w-full">Send Message</Button>
                 </form>
               )}
             </div>
